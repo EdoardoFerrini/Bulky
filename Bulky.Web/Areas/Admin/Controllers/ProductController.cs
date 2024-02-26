@@ -11,11 +11,11 @@ namespace Bulky.Web.Areas.Admin.Controllers
     public class ProductController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ApplicationDbContext _db;
-        public ProductController(IUnitOfWork unitOfWork, ApplicationDbContext db)
+        private readonly IWebHostEnvironment _webHostEnvironment;
+        public ProductController(IUnitOfWork unitOfWork, ApplicationDbContext db, IWebHostEnvironment webHostEnvironment)
         {
             _unitOfWork = unitOfWork;
-            _db = db;
+            _webHostEnvironment = webHostEnvironment;
         }
         public IActionResult Index()
         {
@@ -32,32 +32,60 @@ namespace Bulky.Web.Areas.Admin.Controllers
                     Text = u.Name,
                     Value = u.Id.ToString()
                 }),
-                Product= new Product()
             };
-            if (productId != null || productId != 1)
+            if (productId == null || productId == 0)
             {
-
+                productVm.Product = new();
+            }
+            else
+            {
                 productVm.Product = _unitOfWork.Product.Get(u => u.Id == productId);
             }
 
             return View(productVm);
         }
         [HttpPost]
-        public IActionResult Upsert(Product product)
+        public IActionResult Upsert(ProductVm productVm, IFormFile? file)
         {
-            //if (product.Name == product.DisplayOrder.ToString())
-            //{
-            //    ModelState.AddModelError("Name", "The name cannot be the same as display order");
-            //}
             if (ModelState.IsValid)
             {
-                _unitOfWork.Product.Add(product);
+                string wwwRootPath = _webHostEnvironment.WebRootPath;
+                if (file != null)
+                {
+                    if (!string.IsNullOrEmpty(productVm.Product.ImageUrl))
+                    {
+                        var oldImagePath = Path.Combine(wwwRootPath, productVm.Product.ImageUrl.TrimStart('\\'));
+                        if (System.IO.File.Exists(oldImagePath))
+                        {
+                            System.IO.File.Delete(oldImagePath);
+                        }
+                    }
+
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                    string productPath = Path.Combine(wwwRootPath, @"images\product");
+
+                    using (var fileStream = new FileStream(Path.Combine(productPath, fileName), FileMode.Create))
+                    {
+                        file.CopyTo(fileStream);
+                    }
+
+                    productVm.Product.ImageUrl = @"\images\product\" + fileName;
+                }
+                if(productVm.Product.Id == 0)
+                {
+                    _unitOfWork.Product.Add(productVm.Product);
+                }
+                else
+                {
+                    _unitOfWork.Product.Update(productVm.Product);
+                }
+               
                 _unitOfWork.Save();
                 TempData["success"] = "The Product has been created succesfully.";
                 return RedirectToAction("Index");
             }
             TempData["error"] = "";
-            return View(product);
+            return View(productVm.Product);
         }
 
         public IActionResult Edit(int ProductId)
