@@ -23,13 +23,23 @@ namespace Bulky.Web.Areas.Admin.Controllers
 
             return View(productList);
         }
-        public IActionResult Create(ProductVm productVm)
+        public IActionResult Upsert(int productId)
         {
-            productVm.CategoryList = _unitOfWork.Category.GetAll().Select(u => new SelectListItem
+            ProductVm productVm = new()
             {
-                Text = u.Name,
-                Value = u.Id.ToString()
-            });
+                CategoryList = _unitOfWork.Category.GetAll().Select(u => new SelectListItem
+                {
+                    Text = u.Name,
+                    Value = u.Id.ToString()
+                }),
+                Product= new Product()
+            };
+            if (productId != null || productId != 1)
+            {
+
+                productVm.Product = _unitOfWork.Product.Get(u => u.Id == productId);
+            }
+
             return View(productVm);
         }
         [HttpPost]
