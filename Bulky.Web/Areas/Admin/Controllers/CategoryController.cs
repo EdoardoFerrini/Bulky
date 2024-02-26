@@ -3,8 +3,9 @@ using Bulky.DataAccess.Repository.IRepository;
 using Bulky.Models.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Bulky.Web.Controllers
+namespace Bulky.Web.Areas.Admin.Controllers
 {
+    [Area("Admin")]
     public class CategoryController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -39,9 +40,9 @@ namespace Bulky.Web.Controllers
             return View(category);
         }
 
-        public IActionResult Edit (int categoryId)
+        public IActionResult Edit(int categoryId)
         {
-            Category category = _unitOfWork.Category.Get(u=> u.Id == categoryId);
+            Category category = _unitOfWork.Category.Get(u => u.Id == categoryId);
             return View(category);
         }
 
