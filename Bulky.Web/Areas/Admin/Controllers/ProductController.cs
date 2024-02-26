@@ -43,7 +43,7 @@ namespace Bulky.Web.Areas.Admin.Controllers
             return View(productVm);
         }
         [HttpPost]
-        public IActionResult Create(Product product)
+        public IActionResult Upsert(Product product)
         {
             //if (product.Name == product.DisplayOrder.ToString())
             //{
