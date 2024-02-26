@@ -32,9 +32,10 @@ namespace Bulky.Web.Controllers
             {
                 _unitOfWork.Category.Add(category);
                 _unitOfWork.Save();
+                TempData["success"] = "The Category has been created succesfully.";
                 return RedirectToAction("Index");
             }
-            
+            TempData["error"] = "";
             return View(category);
         }
 
@@ -55,8 +56,10 @@ namespace Bulky.Web.Controllers
             {
                 _unitOfWork.Category.Update(category);
                 _unitOfWork.Save();
+                TempData["success"] = "The Category has been edited succesfully.";
                 return RedirectToAction("Index");
             }
+            TempData["error"] = "";
             return View(category);
         }
 
@@ -73,6 +76,7 @@ namespace Bulky.Web.Controllers
             Category category = _unitOfWork.Category.Get(u => u.Id == categoryId);
             _unitOfWork.Category.Remove(category);
             _unitOfWork.Save();
+            TempData["success"] = "The Category has been deleted succesfully.";
             return RedirectToAction("Index");
         }
     }
