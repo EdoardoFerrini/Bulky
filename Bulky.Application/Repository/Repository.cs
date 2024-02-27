@@ -35,7 +35,7 @@ namespace Bulky.DataAccess.Repository
             {
                 foreach (var property in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 {
-                    query.Include(property);
+                    query = query.Include(property);
                 }
             }
             
