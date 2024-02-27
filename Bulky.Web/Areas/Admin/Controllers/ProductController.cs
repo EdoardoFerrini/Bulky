@@ -116,7 +116,7 @@ namespace Bulky.Web.Areas.Admin.Controllers
             List<Product> productList = _unitOfWork.Product.GetAll(includeProperties:"Category").ToList();
             return Json(new { data = productList });
         }
-        //[HttpDelete]
+        [HttpDelete]
         public IActionResult Delete(int id)
         {
             var productDelete = _unitOfWork.Product.Get(u=> u.Id == id);
