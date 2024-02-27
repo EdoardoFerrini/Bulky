@@ -16,28 +16,18 @@
 </div>
 
 
-<table class="table table-bordered table-striped">
+<table id="tblData" class="table table-bordered table-striped">
     <thead>
         <tr>
-            <th>
-                Title
-            </th>
-            <th>
-                Author
-            </th>
-            <th>
-                ISBN
-            </th>
-            <th>
-                Price
-            </th>
-            <th>
-                CategoryId
-            </th>
+            <th>Title</th>
+            <th>ISBN</th>
+            <th>Author</th>
+            <th>Price</th>
+            <th>Category Name</th>
             <th></th>
         </tr>
     </thead>
-    <tbody>
+@*     <tbody>
         @foreach (var obj in Model)
         {
             <tr>
@@ -58,5 +48,10 @@
                 </td>
             </tr>
         }
-    </tbody>
+    </tbody> *@
 </table>
+
+@section Scripts 
+{
+    <script src="~/js/product.js"></script>
+}
