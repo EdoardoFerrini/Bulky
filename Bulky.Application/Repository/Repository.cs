@@ -31,7 +31,7 @@ namespace Bulky.DataAccess.Repository
             IQueryable<T> query = dbSet;
             query = query.Where(filter);
 
-            if(includeProperties != null)
+            if(!string.IsNullOrEmpty(includeProperties))
             {
                 foreach (var property in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 {
@@ -50,11 +50,11 @@ namespace Bulky.DataAccess.Repository
             {
                 query = query.Where(filter);
             }
-            if (includeProperties != null)
+            if (!string.IsNullOrEmpty(includeProperties))
             {
                 foreach (var property in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 {
-                    query.Include(property);
+                    query = query.Include(property);
                 }
             }
             return query.ToList();
