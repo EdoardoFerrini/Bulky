@@ -19,7 +19,7 @@ namespace Bulky.Web.Areas.Admin.Controllers
         }
         public IActionResult Index()
         {
-            List<Product> productList = _unitOfWork.Product.GetAll(includeProperties:"Category").ToList();
+            IEnumerable<Product> productList = _unitOfWork.Product.GetAll(includeProperties:"Category");
 
             return View(productList);
         }
