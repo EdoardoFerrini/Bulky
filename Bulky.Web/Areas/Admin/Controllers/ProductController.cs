@@ -88,27 +88,6 @@ namespace Bulky.Web.Areas.Admin.Controllers
             return View(productVm.Product);
         }
 
-        public IActionResult Edit(int ProductId)
-        {
-            Product Product = _unitOfWork.Product.Get(u => u.Id == ProductId);
-            return View(Product);
-        }
-
-        [HttpPost]
-        public IActionResult Edit(Product Product)
-        {
-            if (ModelState.IsValid)
-            {
-                _unitOfWork.Product.Update(Product);
-                _unitOfWork.Save();
-                TempData["success"] = "The Product has been edited succesfully.";
-                return RedirectToAction("Index");
-            }
-            TempData["error"] = "";
-            return View(Product);
-        }
-
-
         #region API CALLS
         [HttpGet]
         public IActionResult GetAll()
