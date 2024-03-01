@@ -1,8 +1,10 @@
 ﻿using Bulky.DataAccess.Data;
 using Bulky.DataAccess.Repository;
 using Bulky.DataAccess.Repository.IRepository;
+using Bulky.Models;
 using Bulky.Models.Models;
 using Bulky.Models.ViewModels;
+using Bulky.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -14,7 +16,8 @@ namespace Bulky.Web.Areas.Customer.Controllers
     public class ShoppingCartController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
-        public ShoppingCartVm shoppingCartVm { get; set; }
+        [BindProperty]
+        public ShoppingCartVm ShoppingCartVm { get; set; }
         public ShoppingCartController(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -44,28 +47,91 @@ namespace Bulky.Web.Areas.Customer.Controllers
             var claimsIdentity = (ClaimsIdentity)User.Identity;
             var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-            ShoppingCartVm shoppingCartVm = new ShoppingCartVm()
+            ShoppingCartVm = new()
             {
                 ShoppingCartList = _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId, includeProperties: "Product"),
                 OrderHeader = new()
             };
 
-            shoppingCartVm.OrderHeader.ApplicationUser = _unitOfWork.ApplicationUser.Get(u=> u.Id == userId);
-            shoppingCartVm.OrderHeader.Name = shoppingCartVm.OrderHeader.ApplicationUser.Name;
-            shoppingCartVm.OrderHeader.PhoneNumber = shoppingCartVm.OrderHeader.ApplicationUser.PhoneNumber;
-            shoppingCartVm.OrderHeader.City = shoppingCartVm.OrderHeader.ApplicationUser.City;
-            shoppingCartVm.OrderHeader.State = shoppingCartVm.OrderHeader.ApplicationUser.State;
-            shoppingCartVm.OrderHeader.PostalCode = shoppingCartVm.OrderHeader.ApplicationUser.PostalCode;
-            shoppingCartVm.OrderHeader.StreetAddress = shoppingCartVm.OrderHeader.ApplicationUser.StreetAddress;
+            ShoppingCartVm.OrderHeader.ApplicationUser = _unitOfWork.ApplicationUser.Get(u => u.Id == userId);
+            ShoppingCartVm.OrderHeader.Name = ShoppingCartVm.OrderHeader.ApplicationUser.Name;
+            ShoppingCartVm.OrderHeader.PhoneNumber = ShoppingCartVm.OrderHeader.ApplicationUser.PhoneNumber;
+            ShoppingCartVm.OrderHeader.City = ShoppingCartVm.OrderHeader.ApplicationUser.City;
+            ShoppingCartVm.OrderHeader.State = ShoppingCartVm.OrderHeader.ApplicationUser.State;
+            ShoppingCartVm.OrderHeader.PostalCode = ShoppingCartVm.OrderHeader.ApplicationUser.PostalCode;
+            ShoppingCartVm.OrderHeader.StreetAddress = ShoppingCartVm.OrderHeader.ApplicationUser.StreetAddress;
 
-            foreach (var cart in shoppingCartVm.ShoppingCartList)
+            foreach (var cart in ShoppingCartVm.ShoppingCartList)
             {
                 cart.Price = GetPriceBasedOnQuantity(cart);
-                shoppingCartVm.OrderHeader.OrderTotal += (cart.Price * cart.Count);
+                ShoppingCartVm.OrderHeader.OrderTotal += (cart.Price * cart.Count);
             }
-            return View(shoppingCartVm);
+            return View(ShoppingCartVm);
+
+        }
+        [HttpPost]
+        [ActionName("Summary")]
+        public IActionResult SummaryPost()
+        {
+			var claimsIdentity = (ClaimsIdentity)User.Identity;
+			var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+			ShoppingCartVm.ShoppingCartList = _unitOfWork.ShoppingCart.GetAll(u=> u.ApplicationUserId == userId, includeProperties:"Product");
+            
+            ShoppingCartVm.OrderHeader.OrderDate = System.DateTime.Now;
+            ShoppingCartVm.OrderHeader.ApplicationUserId = userId;
+
+            //Se popoliamo questo record quando andiamo a fare l'add aggiungerà anche la navigation property andando in errore
+            //pensando che stiamo creando una nuova entità
+            //ShoppingCartVm.OrderHeader.ApplicationUser = _unitOfWork.ApplicationUser.Get(u => u.Id == userId);
+            ApplicationUser applicationUser = _unitOfWork.ApplicationUser.Get(u => u.Id == userId);
+
+			foreach (var cart in ShoppingCartVm.ShoppingCartList)
+			{
+				cart.Price = GetPriceBasedOnQuantity(cart);
+				ShoppingCartVm.OrderHeader.OrderTotal += (cart.Price * cart.Count);
+			}
+
+            if(applicationUser.CompanyId.GetValueOrDefault() == 0)
+            {
+                ShoppingCartVm.OrderHeader.PaymentStatus = Sd.PaymentStatusPending;
+                ShoppingCartVm.OrderHeader.OrderStatus = Sd.StatusPending;
+            }
+            else
+            {
+                ShoppingCartVm.OrderHeader.PaymentStatus = Sd.PaymentStatusDelayedPayment;
+                ShoppingCartVm.OrderHeader.OrderStatus = Sd.StatusApproved;
+            }
+            _unitOfWork.OrderHeader.Add(ShoppingCartVm.OrderHeader);
+            _unitOfWork.Save();
+
+
+            foreach (var cart in ShoppingCartVm.ShoppingCartList)
+            {
+                OrderDetail orderDetail = new()
+                {
+                    ProductId = cart.ProductId,
+                    OrderHeaderId = ShoppingCartVm.OrderHeader.Id,
+                    Price = cart.Price,
+                    Count = cart.Count
+                };
+                _unitOfWork.OrderDetail.Add(orderDetail);
+                _unitOfWork.Save();
+            }
+
+			if (applicationUser.CompanyId.GetValueOrDefault() == 0)
+			{
+				ShoppingCartVm.OrderHeader.PaymentStatus = Sd.PaymentStatusPending;
+				ShoppingCartVm.OrderHeader.OrderStatus = Sd.StatusPending;
+			}
+
+			return RedirectToAction(nameof(OrderConfirmation), new { id= ShoppingCartVm.OrderHeader.Id});
         }
 
+        public IActionResult OrderConfirmation(int id)
+        {
+            return View(id);
+        }
         private double GetPriceBasedOnQuantity(ShoppingCart shoppingCart) 
         { 
             if (shoppingCart.Count <= 50) 
