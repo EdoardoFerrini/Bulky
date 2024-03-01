@@ -38,6 +38,11 @@ namespace Bulky.Web.Areas.Customer.Controllers
             return View(shoppingCartVm);
         }
 
+        public IActionResult Summary()
+        {
+            return View();
+        }
+
         private double GetPriceBasedOnQuantity(ShoppingCart shoppingCart) 
         { 
             if (shoppingCart.Count <= 50) 
