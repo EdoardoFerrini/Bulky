@@ -27,12 +27,13 @@ namespace Bulky.Web.Areas.Customer.Controllers
             ShoppingCartVm shoppingCartVm = new ShoppingCartVm()
             {
                 ShoppingCartList = _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId, includeProperties: "Product"),
+                OrderHeader = new()
             };
 
             foreach(var cart in shoppingCartVm.ShoppingCartList)
             {
                 cart.Price = GetPriceBasedOnQuantity(cart);
-                shoppingCartVm.OrderTotal += (cart.Price * cart.Count);
+                shoppingCartVm.OrderHeader.OrderTotal += (cart.Price * cart.Count);
             }
 
             return View(shoppingCartVm);
@@ -88,6 +89,8 @@ namespace Bulky.Web.Areas.Customer.Controllers
         public IActionResult Remove(int cartId) 
         {
             var cartFromDb = _unitOfWork.ShoppingCart.Get(u => u.Id == cartId);
+            _unitOfWork.ShoppingCart.Remove(cartFromDb);
+            _unitOfWork.Save();
             return RedirectToAction(nameof(Index));
         }
     }
